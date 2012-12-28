@@ -1,7 +1,7 @@
 PopulateContacts
 ================
 
-PopulateContacts is a sample app that will populate the Contacts app with 100 random contacts.
+PopulateContacts is a simple app that will populate the iOS Simulator Contacts app with 100 random contacts. It also provides the ability to delete all contacts (just in case you hit the Add button too many times :))
 
 ### Usage
 
