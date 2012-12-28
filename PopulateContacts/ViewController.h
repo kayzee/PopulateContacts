@@ -9,7 +9,9 @@
 #import <UIKit/UIKit.h>
 #import <AddressBook/AddressBook.h>
 
-@interface ViewController : UIViewController {
+@interface ViewController : UIViewController <UIActionSheetDelegate> {
+    NSArray *names;
+    NSArray *companyNames;
 }
 
 - (IBAction)PopulateContacts:(id)sender;

@@ -18,6 +18,8 @@
 {
     [super viewDidLoad];
 	// Do any additional setup after loading the view, typically from a nib.
+    
+    [self initializeStringArrays];
 }
 
 - (void)didReceiveMemoryWarning
@@ -26,57 +28,246 @@
     // Dispose of any resources that can be recreated.
 }
 
+
 - (IBAction)PopulateContacts:(id)sender {
-
-    ABAddressBookRef iPhoneAddressBook = ABAddressBookCreate();
-    ABRecordRef newPerson = ABPersonCreate();
-    
-    // add infos
-    NSString *firstName = [self getRandomFirstName];
-    ABRecordSetValue(newPerson, kABPersonFirstNameProperty, CFBridgingRetain(firstName), nil);
-    NSString *lastName = [self getRandomLastName];
-    ABRecordSetValue(newPerson, kABPersonLastNameProperty, CFBridgingRetain(lastName), nil);
-    ABRecordSetValue(newPerson, kABPersonOrganizationProperty, CFBridgingRetain([self getRandomCompany]), nil);
-    
-    ABMutableMultiValueRef multiPhone = ABMultiValueCreateMutable(kABMultiStringPropertyType);
-    
-    ABMultiValueAddValueAndLabel(multiPhone, CFBridgingRetain([self getRandomPhoneNumber]), kABWorkLabel, NULL);
-    ABRecordSetValue(newPerson, kABPersonPhoneProperty, multiPhone,nil);
-    CFRelease(multiPhone);
-    
-    ABMutableMultiValueRef multiEmail = ABMultiValueCreateMutable(kABMultiStringPropertyType);
-    NSString *email = [self getRandomEmailForFirstName:firstName andLastName:lastName];
-    ABMultiValueAddValueAndLabel(multiEmail, CFBridgingRetain(email), kABWorkLabel, NULL);
-    ABRecordSetValue(newPerson, kABPersonEmailProperty, multiEmail, nil);
-    
-    CFRelease(multiEmail);
-    
-    ABAddressBookAddRecord(iPhoneAddressBook, newPerson, nil);
-    ABAddressBookSave(iPhoneAddressBook, nil);
-    
-    CFRelease(newPerson);
-    CFRelease(iPhoneAddressBook);
+    // number of records
+    int records = [names count];
+    UIActionSheet *popupQuery = [[UIActionSheet alloc] initWithTitle:[NSString stringWithFormat:@"Add %d records to Contacts app?", records] delegate:self cancelButtonTitle:@"No way" destructiveButtonTitle:nil otherButtonTitles:@"Yes please", nil];
+	popupQuery.actionSheetStyle = UIActionSheetStyleBlackTranslucent;
+	[popupQuery showInView:self.view];
 }
 
-- (NSString *)getRandomFirstName {
-    return @"Kevin";
+
+-(void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex {
+    if (buttonIndex == 0) {
+        NSLog(@"OK");
+        int records = [self createNewContactRecord];
+
+        UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Contacts Populated"
+                                                message:[NSString stringWithFormat:@"%d records were added.", records]
+                                               delegate:nil
+                                      cancelButtonTitle:@"OK"
+                                      otherButtonTitles:nil];
+        [alert show];
+    }
+    else {
+        NSLog(@"Cancel Button Clicked");
+    }
 }
-- (NSString *)getRandomLastName {
-    return @"Zych";
+
+
+- (int)createNewContactRecord {
+    int recordsCreated = 0;
+
+    for (int i=0; i<[names count]; i++) {
+        ABAddressBookRef iPhoneAddressBook = ABAddressBookCreate();
+        ABRecordRef newPerson = ABPersonCreate();
+        
+        NSString *name = [names objectAtIndex:i];
+        NSString *firstName = [self getFirstNameFromFullName:name];
+        NSString *lastName = [self getLastNameFromFullName:name];
+        NSString *company = [self getRandomCompany];
+        
+        ABRecordSetValue(newPerson, kABPersonFirstNameProperty, CFBridgingRetain(firstName), nil);
+        
+        ABRecordSetValue(newPerson, kABPersonLastNameProperty, CFBridgingRetain(lastName), nil);
+        ABRecordSetValue(newPerson, kABPersonOrganizationProperty, CFBridgingRetain(company), nil);
+        
+        ABMutableMultiValueRef multiPhone = ABMultiValueCreateMutable(kABMultiStringPropertyType);
+        ABMultiValueAddValueAndLabel(multiPhone, CFBridgingRetain([self getRandomPhoneNumber]), kABWorkLabel, NULL);
+        ABRecordSetValue(newPerson, kABPersonPhoneProperty, multiPhone,nil);
+        CFRelease(multiPhone);
+        
+        ABMutableMultiValueRef multiEmail = ABMultiValueCreateMutable(kABMultiStringPropertyType);
+        NSString *email = [self getEmailForFirstName:firstName lastName:lastName company:company];
+        ABMultiValueAddValueAndLabel(multiEmail, CFBridgingRetain(email), kABWorkLabel, NULL);
+        ABRecordSetValue(newPerson, kABPersonEmailProperty, multiEmail, nil);
+        CFRelease(multiEmail);
+        
+        ABAddressBookAddRecord(iPhoneAddressBook, newPerson, nil);
+        ABAddressBookSave(iPhoneAddressBook, nil);
+        
+        CFRelease(newPerson);
+        CFRelease(iPhoneAddressBook);
+        
+        recordsCreated++;
+    }
+    
+    return recordsCreated;
+}
+
+- (NSString *)getFirstNameFromFullName:(NSString *)fullName {
+    return [[fullName componentsSeparatedByString:@" "] objectAtIndex:0];
+}
+- (NSString *)getLastNameFromFullName:(NSString *)fullName {
+    return [[fullName componentsSeparatedByString:@" "] objectAtIndex:1];
 }
 
 - (NSString *)getRandomPhoneNumber {
-    return @"905-555-5555";
+    return [NSString stringWithFormat:@"%d%d%d-%d%d%d-%d%d%d%d",
+            arc4random() % 10,
+            arc4random() % 10,
+            arc4random() % 10,
+            arc4random() % 10,
+            arc4random() % 10,
+            arc4random() % 10,
+            arc4random() % 10,
+            arc4random() % 10,
+            arc4random() % 10,
+            arc4random() % 10];
 }
 
-- (NSString *)getRandomEmailForFirstName:(NSString *)firstName andLastName:(NSString *)lastName {
-    return [NSString stringWithFormat:@"%@.%@@%@", [firstName lowercaseString], [lastName lowercaseString], [self getRandomDomain]];
+- (NSString *)getEmailForFirstName:(NSString *)firstName lastName:(NSString *)lastName company:(NSString *)company {
+    return [NSString stringWithFormat:@"%@.%@@%@", [firstName lowercaseString], [lastName lowercaseString], [self getDomainForCompany:company]];
 }
-- (NSString *)getRandomDomain {
-    return [NSString stringWithFormat:@"%@.com", [[self getRandomCompany] lowercaseString]];
+
+- (NSString *)getDomainForCompany:(NSString *)company {
+    // get random company and remove any spaces in name
+    return [NSString stringWithFormat:@"%@.com", [[company stringByReplacingOccurrencesOfString:@" " withString:@""] lowercaseString]];
 }
+
 - (NSString *)getRandomCompany {
-    return @"DevBBQ";
+    NSUInteger randomIndex = arc4random() % [companyNames count];
+    return [companyNames objectAtIndex:randomIndex];
+}
+
+- (void)initializeStringArrays {
+    names = [NSArray arrayWithObjects:
+             @"Abdul Sponaugle",
+             @"Abe Sandquist",
+             @"Adolfo Cuccia",
+             @"Alyson Lalor",
+             @"Anthony Oberg",
+             @"Arlette Clonts",
+             @"Autumn Solley",
+             @"Azucena Jun",
+             @"Basil Landreneau",
+             @"Bennett Mancha",
+             @"Benny Crater",
+             @"Bethel Membreno",
+             @"Blair Beers",
+             @"Brianna Genna",
+             @"Carlo Conder",
+             @"Cedric Meunier",
+             @"Cesar Gagliano",
+             @"Chang Benjamin",
+             @"Chelsey Minaya",
+             @"Cindie Sahr",
+             @"Clayton Paton",
+             @"Clint Brosnahan",
+             @"Daisy Alfano",
+             @"Daren Jankowski",
+             @"Darlene Forbus",
+             @"Deanne Charles",
+             @"Donny Gabriel",
+             @"Dusty Omeara",
+             @"Edgar Mouzon",
+             @"Emogene Cardinale",
+             @"Esteban Linden",
+             @"Felecia Cron",
+             @"Felton Mcgeehan",
+             @"Floyd Gebhardt",
+             @"Forest Sowders",
+             @"Frank Wohlford",
+             @"Garret Rape",
+             @"Georgianna Vittetoe",
+             @"Gigi Kellett",
+             @"Giovanni Plants",
+             @"Gonzalo Huard",
+             @"Harlan Canton",
+             @"Heath Huie",
+             @"Hilma Holen",
+             @"Hue Knutsen",
+             @"Imelda Crossen",
+             @"Issac Congdon",
+             @"Jesusita Matranga",
+             @"Jinny Depp",
+             @"Joey Iadarola",
+             @"Joie Padula",
+             @"Joline Vaughn",
+             @"Kacy Drouin",
+             @"Kevin Zych",             
+             @"Kina Rockwood",
+             @"Lachelle Patti",
+             @"Landon Rickey",
+             @"Li Mccarron",
+             @"Lincoln Wetherell",
+             @"Lisabeth Cespedes",
+             @"Logan Eslinger",
+             @"Luciana Victorine",
+             @"Lura Throneberry",
+             @"Magen Nye",
+             @"Malia Schmelzer",
+             @"Malisa Nygren",
+             @"Marcel Pitcock",
+             @"Margarito Steigerwald",
+             @"Marhta Mayers",
+             @"Mark Mosely",
+             @"Melinda Ziemer",
+             @"Mohammed Valenta",
+             @"Myrta Stump",
+             @"Nickolas Brien",
+             @"Nona Maris",
+             @"Ozie Tapper",
+             @"Pearlene Kish",
+             @"Racheal Metellus",
+             @"Refugio Murden",
+             @"Reinaldo Delrosario",
+             @"Reva Scharf",
+             @"Rosanne Schillinger",
+             @"Rosenda Fabela",
+             @"Royce Theis",
+             @"Seth Vu",
+             @"Shad Riggins",
+             @"Shameka Mahn",
+             @"Sharan Gartner",
+             @"Stacia Hotaling",
+             @"Tamika Ohlsen",
+             @"Tereasa Villatoro",
+             @"Terence Hild",
+             @"Terry Poplin",
+             @"Tod Pineda",
+             @"Valene Real",
+             @"Vivian Shipman",
+             @"Wes Zhu",
+             @"Wilbur Jandreau",
+             @"Willian Quandt",
+             @"Yolanda	Strait",
+             nil];
+        
+    companyNames = [NSArray arrayWithObjects:
+                    @"DevBBQ",
+                    @"KayZee Solutions",
+                    @"Apple",
+                    @"Google",
+                    @"Yahoo",
+                    @"Amazon",
+                    @"Microsoft",
+                    @"Square",
+                    @"LinkedIn",
+                    @"Dropbox",
+                    @"Eventbrite",
+                    @"Zynga",
+                    @"Twitter",                    
+                    @"Facebook",
+                    @"Toshiba",
+                    @"JawBone",
+                    @"Sony",
+                    @"Oracle",
+                    @"Nintendo",
+                    @"NVIDEA",
+                    @"Accenture",
+                    @"Intuit",
+                    @"Groupon",
+                    @"Intel",
+                    @"Adobe",
+                    @"Nissan",
+                    @"General Motors",
+                    @"Toyota",
+                    @"Honda",
+                    @"Acura",
+                    @"BMW",
+                    nil];
 }
 
 
