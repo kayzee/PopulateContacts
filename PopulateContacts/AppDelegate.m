@@ -3,7 +3,7 @@
 //  PopulateContacts
 //
 //  Created by Kevin Zych on 12-12-27.
-//  Copyright (c) 2012 XYZ. All rights reserved.
+//  Copyright (c) 2012 DevBBQ Inc. All rights reserved.
 //
 
 #import "AppDelegate.h"
