@@ -30,31 +30,63 @@
 
 
 - (IBAction)PopulateContacts:(id)sender {
-    // number of records
     int records = [names count];
+    sheetType = ActionSheet_AddContacts;
+    
     UIActionSheet *popupQuery = [[UIActionSheet alloc] initWithTitle:[NSString stringWithFormat:@"Add %d records to Contacts app?", records] delegate:self cancelButtonTitle:@"No way" destructiveButtonTitle:nil otherButtonTitles:@"Yes please", nil];
+	popupQuery.actionSheetStyle = UIActionSheetStyleBlackTranslucent;
+	[popupQuery showInView:self.view];
+}
+
+- (IBAction)DeleteAllContacts:(id)sender {
+    sheetType = ActionSheet_DeleteContacts;
+    
+    UIActionSheet *popupQuery = [[UIActionSheet alloc] initWithTitle:@"Remove ALL Contacts?" delegate:self cancelButtonTitle:@"No way" destructiveButtonTitle:@"Yes" otherButtonTitles:nil];
 	popupQuery.actionSheetStyle = UIActionSheetStyleBlackTranslucent;
 	[popupQuery showInView:self.view];
 }
 
 
 -(void)actionSheet:(UIActionSheet *)actionSheet clickedButtonAtIndex:(NSInteger)buttonIndex {
-    if (buttonIndex == 0) {
-        NSLog(@"OK");
-        int records = [self createNewContactRecord];
-
-        UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Contacts Populated"
-                                                message:[NSString stringWithFormat:@"%d records were added.", records]
-                                               delegate:nil
-                                      cancelButtonTitle:@"OK"
-                                      otherButtonTitles:nil];
-        [alert show];
+    switch (sheetType) {
+        case ActionSheet_AddContacts:
+            if (buttonIndex == 0) {
+                NSLog(@"OK");
+                int records = [self createNewContactRecord];
+                
+                UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Contacts Populated"
+                                                                message:[NSString stringWithFormat:@"%d records were added.", records]
+                                                               delegate:nil
+                                                      cancelButtonTitle:@"OK"
+                                                      otherButtonTitles:nil];
+                [alert show];
+            }
+            else {
+                NSLog(@"Cancel Button Clicked");
+            }
+            break;
+        case ActionSheet_DeleteContacts:
+            [self deleteAllContactsInAddressBook];
+            break;
+        default:
+            break;
     }
-    else {
-        NSLog(@"Cancel Button Clicked");
-    }
+    
+    sheetType = -1;
 }
 
+- (void)deleteAllContactsInAddressBook {
+    ABAddressBookRef iPhoneAddressBook = ABAddressBookCreate( );
+    CFArrayRef allPeople = ABAddressBookCopyArrayOfAllPeople(iPhoneAddressBook);
+    CFIndex nPeople = ABAddressBookGetPersonCount(iPhoneAddressBook);
+    
+    for ( int i = 0; i < nPeople; i++ )
+    {
+        ABRecordRef ref = CFArrayGetValueAtIndex(allPeople, i);
+        ABAddressBookRemoveRecord(iPhoneAddressBook, ref, nil);
+    }
+    ABAddressBookSave(iPhoneAddressBook, nil);
+}
 
 - (int)createNewContactRecord {
     int recordsCreated = 0;
