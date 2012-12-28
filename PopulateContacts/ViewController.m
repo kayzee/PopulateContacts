@@ -75,18 +75,6 @@
     sheetType = -1;
 }
 
-- (void)deleteAllContactsInAddressBook {
-    ABAddressBookRef iPhoneAddressBook = ABAddressBookCreate( );
-    CFArrayRef allPeople = ABAddressBookCopyArrayOfAllPeople(iPhoneAddressBook);
-    CFIndex nPeople = ABAddressBookGetPersonCount(iPhoneAddressBook);
-    
-    for ( int i = 0; i < nPeople; i++ )
-    {
-        ABRecordRef ref = CFArrayGetValueAtIndex(allPeople, i);
-        ABAddressBookRemoveRecord(iPhoneAddressBook, ref, nil);
-    }
-    ABAddressBookSave(iPhoneAddressBook, nil);
-}
 
 - (int)createNewContactRecord {
     int recordsCreated = 0;
@@ -96,6 +84,7 @@
         ABRecordRef newPerson = ABPersonCreate();
         
         NSString *name = [names objectAtIndex:i];
+        NSLog(@"i: %d; Name: %@", i, name);
         NSString *firstName = [self getFirstNameFromFullName:name];
         NSString *lastName = [self getLastNameFromFullName:name];
         NSString *company = [self getRandomCompany];
@@ -127,6 +116,21 @@
     
     return recordsCreated;
 }
+
+
+- (void)deleteAllContactsInAddressBook {
+    ABAddressBookRef iPhoneAddressBook = ABAddressBookCreate( );
+    CFArrayRef allPeople = ABAddressBookCopyArrayOfAllPeople(iPhoneAddressBook);
+    CFIndex nPeople = ABAddressBookGetPersonCount(iPhoneAddressBook);
+    
+    for ( int i = 0; i < nPeople; i++ )
+    {
+        ABRecordRef ref = CFArrayGetValueAtIndex(allPeople, i);
+        ABAddressBookRemoveRecord(iPhoneAddressBook, ref, nil);
+    }
+    ABAddressBookSave(iPhoneAddressBook, nil);
+}
+
 
 - (NSString *)getFirstNameFromFullName:(NSString *)fullName {
     return [[fullName componentsSeparatedByString:@" "] objectAtIndex:0];
@@ -264,7 +268,7 @@
              @"Wes Zhu",
              @"Wilbur Jandreau",
              @"Willian Quandt",
-             @"Yolanda	Strait",
+             @"Yolanda Strait",
              nil];
         
     companyNames = [NSArray arrayWithObjects:
